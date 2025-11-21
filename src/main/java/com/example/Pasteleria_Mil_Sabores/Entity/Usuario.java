@@ -1,8 +1,7 @@
 package com.example.Pasteleria_Mil_Sabores.Entity;
 
 import jakarta.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "USUARIO")
@@ -12,19 +11,35 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer userId;
 
-    @Column(name = "firstName")
-    private String firstName;
+    @Column(name = "nombre", length = 150)
+    private String nombre;
 
-    @Column(name = "lastName")
-    private String lastName;
+    @Column(name = "apellido", length = 150)
+    private String apellido;
 
     @Column(name = "email", nullable = false, length = 200, unique = true)
     private String email;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "USUARIO_ROLES", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "role")
-    private Set<String> roles = new HashSet<>();
+    @Column(name = "password", nullable = false)
+    private String password;
+
+    @Column(name = "fechaNacimiento")
+    private LocalDate fechaNacimiento;
+
+    @Column(name = "direccion", length = 500)
+    private String direccion;
+
+    @Column(name = "telefono", length = 50)
+    private String telefono;
+
+    @Column(name = "rol", length = 50)
+    private String rol;
+
+    @Column(name = "imagen", length = 500)
+    private String imagen;
+
+    @Column(name = "activo")
+    private Boolean activo = true;
 
     // Getters / Setters
 
@@ -36,20 +51,20 @@ public class Usuario {
         this.userId = userId;
     }
 
-    public String getFirstName() {
-        return firstName;
+    public String getNombre() {
+        return nombre;
     }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
     }
 
-    public String getLastName() {
-        return lastName;
+    public String getApellido() {
+        return apellido;
     }
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
+    public void setApellido(String apellido) {
+        this.apellido = apellido;
     }
 
     public String getEmail() {
@@ -60,35 +75,75 @@ public class Usuario {
         this.email = email;
     }
 
-    public Set<String> getRoles() {
-        return roles;
+    public String getPassword() {
+        return password;
     }
 
-    public void setRoles(Set<String> roles) {
-        this.roles = roles;
+    public void setPassword(String password) {
+        this.password = password;
     }
 
-    // Helpers
-    public void addRole(String role) {
-        if (role != null && !role.isBlank()) {
-            this.roles.add(role.trim());
-        }
+    public LocalDate getFechaNacimiento() {
+        return fechaNacimiento;
     }
 
-    public void removeRole(String role) {
-        if (role != null) {
-            this.roles.remove(role.trim());
-        }
+    public void setFechaNacimiento(LocalDate fechaNacimiento) {
+        this.fechaNacimiento = fechaNacimiento;
+    }
+
+    public String getDireccion() {
+        return direccion;
+    }
+
+    public void setDireccion(String direccion) {
+        this.direccion = direccion;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public String getRol() {
+        return rol;
+    }
+
+    public void setRol(String rol) {
+        this.rol = rol;
+    }
+
+    public String getImagen() {
+        return imagen;
+    }
+
+    public void setImagen(String imagen) {
+        this.imagen = imagen;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
     }
 
     @Override
     public String toString() {
         return "Usuario{" +
                 "userId=" + userId +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
+                ", nombre='" + nombre + '\'' +
+                ", apellido='" + apellido + '\'' +
                 ", email='" + email + '\'' +
-                ", roles=" + roles +
+                ", fechaNacimiento=" + fechaNacimiento +
+                ", direccion='" + direccion + '\'' +
+                ", telefono='" + telefono + '\'' +
+                ", rol='" + rol + '\'' +
+                ", imagen='" + imagen + '\'' +
+                ", activo=" + activo +
                 '}';
     }
 }

@@ -2,6 +2,8 @@ package com.example.Pasteleria_Mil_Sabores.Entity;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "PRODUCTO")
@@ -29,6 +31,9 @@ public class Producto {
 
     @Column(name = "descripcion", length = 1000)
     private String descripcion;
+
+    @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = false)
+    private List<DetalleBoleta> detalles = new ArrayList<>();
 
     // Getters y Setters
 
@@ -86,6 +91,14 @@ public class Producto {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
+    }
+
+    public List<DetalleBoleta> getDetalles() {
+        return detalles;
+    }
+
+    public void setDetalles(List<DetalleBoleta> detalles) {
+        this.detalles = detalles;
     }
 
     @Override
