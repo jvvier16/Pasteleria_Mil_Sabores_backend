@@ -12,14 +12,12 @@ public class DetalleBoleta {
 
     // Relación con Producto
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "producto_id")
     private Producto producto;
 
     @Column(name = "cantidad", nullable = false)
     private Integer cantidad;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "boleta_id")
     private Boleta boleta;
 
     // Getters y Setters

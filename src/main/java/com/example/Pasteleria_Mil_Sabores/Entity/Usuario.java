@@ -2,6 +2,8 @@ package com.example.Pasteleria_Mil_Sabores.Entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "USUARIO")
@@ -17,11 +19,11 @@ public class Usuario {
     @Column(name = "apellido", length = 150)
     private String apellido;
 
-    @Column(name = "email", nullable = false, length = 200, unique = true)
-    private String email;
+    @Column(name = "correo", nullable = false, length = 200, unique = true)
+    private String correo;
 
-    @Column(name = "password", nullable = false)
-    private String password;
+    @Column(name = "contrasena", nullable = false)
+    private String contrasena;
 
     @Column(name = "fechaNacimiento")
     private LocalDate fechaNacimiento;
@@ -32,14 +34,17 @@ public class Usuario {
     @Column(name = "telefono", length = 50)
     private String telefono;
 
-    @Column(name = "rol", length = 50)
-    private String rol;
+    @Column(name = "role", length = 50)
+    private String role;
 
     @Column(name = "imagen", length = 500)
     private String imagen;
 
     @Column(name = "activo")
     private Boolean activo = true;
+
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Boleta> boletas = new ArrayList<>();
 
     // Getters / Setters
 
@@ -67,20 +72,20 @@ public class Usuario {
         this.apellido = apellido;
     }
 
-    public String getEmail() {
-        return email;
+    public String getCorreo() {
+        return correo;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setCorreo(String correo) {
+        this.correo = correo;
     }
 
-    public String getPassword() {
-        return password;
+    public String getContrasena() {
+        return contrasena;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setContrasena(String contrasena) {
+        this.contrasena = contrasena;
     }
 
     public LocalDate getFechaNacimiento() {
@@ -107,12 +112,12 @@ public class Usuario {
         this.telefono = telefono;
     }
 
-    public String getRol() {
-        return rol;
+    public String getRole() {
+        return role;
     }
 
-    public void setRol(String rol) {
-        this.rol = rol;
+    public void setRole(String role) {
+        this.role = role;
     }
 
     public String getImagen() {
@@ -131,19 +136,28 @@ public class Usuario {
         this.activo = activo;
     }
 
+    public List<Boleta> getBoletas() {
+        return boletas;
+    }
+
+    public void setBoletas(List<Boleta> boletas) {
+        this.boletas = boletas;
+    }
+
     @Override
     public String toString() {
         return "Usuario{" +
                 "userId=" + userId +
                 ", nombre='" + nombre + '\'' +
                 ", apellido='" + apellido + '\'' +
-                ", email='" + email + '\'' +
+                ", correo='" + getCorreo() + '\'' +
                 ", fechaNacimiento=" + fechaNacimiento +
                 ", direccion='" + direccion + '\'' +
                 ", telefono='" + telefono + '\'' +
-                ", rol='" + rol + '\'' +
+                ", role='" + role + '\'' +
                 ", imagen='" + imagen + '\'' +
                 ", activo=" + activo +
+                ", boletas=" + (boletas != null ? boletas.size() : 0) +
                 '}';
     }
 }

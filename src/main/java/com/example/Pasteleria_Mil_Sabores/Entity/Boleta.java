@@ -19,7 +19,6 @@ public class Boleta {
 
     // Relación con Usuario (cliente). Aprovecha la entidad Usuario existente.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cliente_id")
     private Usuario cliente;
 
     @OneToMany(mappedBy = "boleta", cascade = CascadeType.ALL, orphanRemoval = true)
