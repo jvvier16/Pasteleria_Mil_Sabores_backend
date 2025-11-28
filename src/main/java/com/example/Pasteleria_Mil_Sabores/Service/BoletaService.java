@@ -31,5 +31,32 @@ public class BoletaService {
         return boletaRepository.findById(id).orElse(null);
     }
     
-    // Podrías necesitar: List<Boleta> obtenerBoletasPorUsuario(Integer userId);
+    // GET BY USER: Obtener boletas de un usuario específico
+    public List<Boleta> obtenerBoletasPorUsuario(@NonNull Integer userId) {
+        return boletaRepository.findByClienteUserId(userId);
+    }
+    
+    // GET BY ESTADO: Obtener boletas por estado
+    public List<Boleta> obtenerBoletasPorEstado(String estado) {
+        return boletaRepository.findByEstado(estado);
+    }
+    
+    // PUT: Actualizar estado de una boleta
+    public Boleta actualizarEstadoBoleta(@NonNull Long id, String nuevoEstado) {
+        Boleta boleta = boletaRepository.findById(id).orElse(null);
+        if (boleta != null) {
+            boleta.setEstado(nuevoEstado);
+            return boletaRepository.save(boleta);
+        }
+        return null;
+    }
+    
+    // DELETE: Eliminar una boleta
+    public String eliminarBoleta(@NonNull Long id) {
+        if (boletaRepository.existsById(id)) {
+            boletaRepository.deleteById(id);
+            return "Boleta con ID " + id + " eliminada.";
+        }
+        return "Boleta no encontrada.";
+    }
 }
