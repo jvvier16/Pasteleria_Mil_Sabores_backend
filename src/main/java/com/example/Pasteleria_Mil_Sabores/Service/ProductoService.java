@@ -4,6 +4,7 @@ import com.example.Pasteleria_Mil_Sabores.Entity.Producto;
 import com.example.Pasteleria_Mil_Sabores.Repository.ProductoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
@@ -13,18 +14,22 @@ public class ProductoService {
     private ProductoRepository productoRepository;
 
     // POST: Crear/Guardar un producto
+    @Transactional
     public Producto crearProducto(Producto producto) {
         return productoRepository.save(producto);
     }
 
-    // GET ALL: Obtener todos los productos
+    // GET ALL: Obtener todos los productos (con categoría cargada para evitar LazyInitializationException)
+    @Transactional(readOnly = true)
     public List<Producto> obtenerTodosLosProductos() {
-        return productoRepository.findAll();
+        List<Producto> productos = productoRepository.findAllWithCategoria();
+        return productos;
     }
 
     // GET BY ID: Obtener un producto por su ID
+    @Transactional(readOnly = true)
     public Producto obtenerProductoPorId(Long id) {
-        return productoRepository.findById(id).orElse(null);
+        return productoRepository.findByIdWithCategoria(id).orElse(null);
     }
 
     // PUT: Actualizar un producto existente

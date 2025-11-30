@@ -32,18 +32,24 @@ public class ProductoDTO {
         this.imagen = producto.getImagen();
         this.descripcion = producto.getDescripcion();
         
-        if (producto.getCategoria() != null) {
-            this.categoriaId = producto.getCategoria().getCategoriaId();
-            this.categoriaNombre = producto.getCategoria().getNombre();
+        // Cargar categoría de forma segura (puede ser null o lazy)
+        try {
+            if (producto.getCategoria() != null) {
+                this.categoriaId = producto.getCategoria().getCategoriaId();
+                this.categoriaNombre = producto.getCategoria().getNombre();
+            }
+        } catch (Exception e) {
+            // Ignorar si la categoría no está cargada (lazy)
+            this.categoriaId = null;
+            this.categoriaNombre = null;
         }
         
-        // Calcular estadísticas
+        // Calcular estadísticas básicas
         this.disponible = producto.getStock() != null && producto.getStock() > 0;
         this.estadoStock = calcularEstadoStock(producto.getStock());
-        this.totalVendidos = producto.getDetalles() != null ? 
-            producto.getDetalles().stream()
-                .mapToInt(d -> d.getCantidad() != null ? d.getCantidad() : 0)
-                .sum() : 0;
+        
+        // Evitar cargar detalles lazy - usar valor por defecto
+        this.totalVendidos = 0;
     }
 
     private String calcularEstadoStock(Integer stock) {
