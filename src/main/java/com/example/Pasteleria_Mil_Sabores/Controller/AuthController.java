@@ -149,5 +149,81 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.created(response));
     }
+
+    /**
+     * GET /api/v1/auth/verificar
+     * GET /api/v2/auth/verificar
+     * 
+     * Verifica si el token JWT sigue siendo válido
+     */
+    @GetMapping({"/v1/auth/verificar", "/v2/auth/verificar"})
+    public ResponseEntity<ApiResponse<VerificacionResponse>> verificarToken(
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(401, "Token no proporcionado"));
+            }
+            
+            String token = authHeader.replace("Bearer ", "");
+            String email = jwtUtil.extractEmail(token);
+            
+            Usuario usuario = usuarioRepository.findByCorreo(email).orElse(null);
+            if (usuario == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(401, "Usuario no encontrado"));
+            }
+            
+            if (!jwtUtil.isTokenValid(token, email)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(401, "Token expirado o inválido"));
+            }
+            
+            if (usuario.getActivo() != null && !usuario.getActivo()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(403, "Usuario desactivado"));
+            }
+            
+            VerificacionResponse response = new VerificacionResponse(
+                true, usuario.getUserId(), usuario.getCorreo(), usuario.getRole()
+            );
+            
+            return ResponseEntity.ok(ApiResponse.success("Token válido", response));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(401, "Token inválido"));
+        }
+    }
+
+    /**
+     * POST /api/v1/auth/logout
+     * POST /api/v2/auth/logout
+     * 
+     * Cierra la sesión (el cliente debe eliminar el token)
+     */
+    @PostMapping({"/v1/auth/logout", "/v2/auth/logout"})
+    public ResponseEntity<ApiResponse<String>> logout() {
+        return ResponseEntity.ok(ApiResponse.success("Sesión cerrada. Elimina el token del almacenamiento local.", null));
+    }
+
+    // DTO interno para verificación
+    public static class VerificacionResponse {
+        private boolean valido;
+        private Integer userId;
+        private String correo;
+        private String role;
+
+        public VerificacionResponse(boolean valido, Integer userId, String correo, String role) {
+            this.valido = valido;
+            this.userId = userId;
+            this.correo = correo;
+            this.role = role;
+        }
+
+        public boolean isValido() { return valido; }
+        public Integer getUserId() { return userId; }
+        public String getCorreo() { return correo; }
+        public String getRole() { return role; }
+    }
 }
 

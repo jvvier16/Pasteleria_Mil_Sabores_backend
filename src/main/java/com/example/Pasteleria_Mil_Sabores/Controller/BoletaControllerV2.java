@@ -1,6 +1,8 @@
 package com.example.Pasteleria_Mil_Sabores.Controller;
 
 import com.example.Pasteleria_Mil_Sabores.Entity.Boleta;
+import com.example.Pasteleria_Mil_Sabores.Entity.Usuario;
+import com.example.Pasteleria_Mil_Sabores.Repository.UsuarioRepository;
 import com.example.Pasteleria_Mil_Sabores.Service.BoletaService;
 import com.example.Pasteleria_Mil_Sabores.dto.ApiResponse;
 import com.example.Pasteleria_Mil_Sabores.security.JwtUtil;
@@ -22,10 +24,12 @@ import java.util.List;
 public class BoletaControllerV2 {
 
     private final BoletaService boletaService;
+    private final UsuarioRepository usuarioRepository;
     private final JwtUtil jwtUtil;
 
-    public BoletaControllerV2(BoletaService boletaService, JwtUtil jwtUtil) {
+    public BoletaControllerV2(BoletaService boletaService, UsuarioRepository usuarioRepository, JwtUtil jwtUtil) {
         this.boletaService = boletaService;
+        this.usuarioRepository = usuarioRepository;
         this.jwtUtil = jwtUtil;
     }
 
@@ -74,7 +78,12 @@ public class BoletaControllerV2 {
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 String token = authHeader.replace("Bearer ", "");
                 Integer userId = jwtUtil.extractUserId(token);
-                // Aquí podrías setear el cliente de la boleta si tienes el userId
+                if (userId != null) {
+                    Usuario cliente = usuarioRepository.findById(userId).orElse(null);
+                    if (cliente != null) {
+                        boleta.setCliente(cliente);
+                    }
+                }
             }
             
             Boleta creada = boletaService.crearBoleta(boleta);
@@ -130,6 +139,62 @@ public class BoletaControllerV2 {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(401, "Error de autenticación"));
+        }
+    }
+
+    /**
+     * PUT /api/v2/boletas/{id}/cancelar
+     * 
+     * Cancela un pedido del usuario autenticado
+     * Solo se puede cancelar si está en estado "pendiente"
+     */
+    @PutMapping("/{id}/cancelar")
+    public ResponseEntity<ApiResponse<Boleta>> cancelarPedido(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authHeader) {
+        
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            Integer userId = jwtUtil.extractUserId(token);
+            String role = jwtUtil.extractRole(token);
+            
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(401, "Token inválido"));
+            }
+            
+            Boleta boleta = boletaService.obtenerBoletaPorId(id);
+            if (boleta == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.notFound("Pedido no encontrado"));
+            }
+            
+            // Verificar permisos
+            String roleLower = role != null ? role.toLowerCase() : "";
+            boolean esPrivilegiado = roleLower.equals("admin") || 
+                                     roleLower.equals("tester") || 
+                                     roleLower.equals("vendedor");
+            
+            // Solo el dueño o un privilegiado puede cancelar
+            if (!esPrivilegiado && (boleta.getCliente() == null || 
+                !boleta.getCliente().getUserId().equals(userId))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(403, "No tienes permiso para cancelar este pedido"));
+            }
+            
+            // Solo se puede cancelar si está pendiente (usuarios normales)
+            String estadoActual = boleta.getEstado() != null ? boleta.getEstado().toLowerCase() : "";
+            if (!estadoActual.equals("pendiente") && !esPrivilegiado) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.badRequest("Solo se pueden cancelar pedidos pendientes. Estado actual: " + boleta.getEstado()));
+            }
+            
+            Boleta cancelada = boletaService.actualizarEstadoBoleta(id, "cancelado");
+            return ResponseEntity.ok(ApiResponse.success("Pedido cancelado exitosamente", cancelada));
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(500, "Error al cancelar: " + e.getMessage()));
         }
     }
 }

@@ -79,7 +79,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/detalles/**").hasAnyRole("ADMIN", "TESTER")
                 
                 // === Endpoints para usuarios autenticados (cualquier rol) ===
+                // Boletas v2
                 .requestMatchers("/api/v2/boletas/mis-pedidos").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v2/boletas").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v2/boletas/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/v2/boletas/*/cancelar").authenticated()
+                
+                // Perfil
                 .requestMatchers("/api/v2/perfil/**").authenticated()
                 
                 // Todo lo demás requiere autenticación
