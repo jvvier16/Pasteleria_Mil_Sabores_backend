@@ -10,25 +10,29 @@ import java.util.List;
 public class Producto {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "producto_seq")
+    @SequenceGenerator(name = "producto_seq", sequenceName = "PRODUCTO_SEQ", allocationSize = 1)
+    @Column(name = "PRODUCTO_ID")
     private Long productoId;
 
-    @Column(name = "nombre", nullable = false, length = 250)
+    @Column(name = "NOMBRE", nullable = false, length = 250)
     private String nombre;
 
-    @Column(name = "precio", precision = 12, scale = 2, nullable = false)
+    @Column(name = "PRECIO", precision = 12, scale = 2, nullable = false)
     private BigDecimal precio;
 
-    @Column(name = "stock")
+    @Column(name = "STOCK")
     private Integer stock;
 
-    @Column(name = "imagen", length = 500)
+    @Column(name = "IMAGEN", length = 500)
     private String imagen;
 
+    // Relación con Categoria - FK explícita
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CATEGORIA_ID", referencedColumnName = "CATEGORIA_ID")
     private Categoria categoria;
 
-    @Column(name = "descripcion", length = 1000)
+    @Column(name = "DESCRIPCION", length = 1000)
     private String descripcion;
 
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = false)

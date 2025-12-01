@@ -7,17 +7,22 @@ import jakarta.persistence.*;
 public class DetalleBoleta {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "detalle_seq")
+    @SequenceGenerator(name = "detalle_seq", sequenceName = "DETALLE_BOLETA_SEQ", allocationSize = 1)
+    @Column(name = "DETALLE_ID")
     private Long detalleId;
 
-    // Relación con Producto
+    // Relación con Producto - FK explícita
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "PRODUCTO_ID", referencedColumnName = "PRODUCTO_ID")
     private Producto producto;
 
-    @Column(name = "cantidad", nullable = false)
+    @Column(name = "CANTIDAD", nullable = false)
     private Integer cantidad;
 
+    // Relación con Boleta - FK explícita
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "BOLETA_ID", referencedColumnName = "BOLETA_ID")
     private Boleta boleta;
 
     // Getters y Setters
