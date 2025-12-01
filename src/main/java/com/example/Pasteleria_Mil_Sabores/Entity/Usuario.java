@@ -1,5 +1,6 @@
 package com.example.Pasteleria_Mil_Sabores.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public class Usuario {
     private String correo;
 
     @Column(name = "contrasena", nullable = false)
+    @JsonIgnore // No exponer contraseña en respuestas JSON
     private String contrasena;
 
     @Column(name = "fechaNacimiento")
@@ -44,6 +46,7 @@ public class Usuario {
     private Boolean activo = true;
 
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore // Evita serialización circular y errores de lazy loading
     private List<Boleta> boletas = new ArrayList<>();
 
     // Getters / Setters

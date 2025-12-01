@@ -1,5 +1,6 @@
 package com.example.Pasteleria_Mil_Sabores.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -21,6 +22,7 @@ public class DetalleBoleta {
     // Relación con Boleta - FK explícita
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "boleta_boleta_id")
+    @JsonIgnore // Evita serialización circular
     private Boleta boleta;
 
     // Getters y Setters

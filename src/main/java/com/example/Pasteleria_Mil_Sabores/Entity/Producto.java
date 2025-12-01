@@ -1,5 +1,6 @@
 package com.example.Pasteleria_Mil_Sabores.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ public class Producto {
     private String descripcion;
 
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, orphanRemoval = false)
+    @JsonIgnore // Evita serialización circular
     private List<DetalleBoleta> detalles = new ArrayList<>();
 
     // Getters y Setters
