@@ -11,6 +11,7 @@ import com.example.Pasteleria_Mil_Sabores.dto.EstadisticasDTO;
 import com.example.Pasteleria_Mil_Sabores.dto.ReporteVentasDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -57,6 +58,7 @@ public class EstadisticasController {
      * Respuestas: 200 Éxito, 500 Error servidor
      */
     @GetMapping("/estadisticas")
+    @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<EstadisticasDTO>> obtenerEstadisticas() {
         try {
             EstadisticasDTO stats = new EstadisticasDTO();
@@ -117,6 +119,7 @@ public class EstadisticasController {
      * Respuestas: 200 Éxito, 500 Error servidor
      */
     @GetMapping("/reportes/ventas")
+    @Transactional(readOnly = true) // Necesario para acceder a colecciones lazy (boleta.items)
     public ResponseEntity<ApiResponse<ReporteVentasDTO>> obtenerReporteVentas(
             @RequestParam(required = false) LocalDate fechaInicio,
             @RequestParam(required = false) LocalDate fechaFin) {
