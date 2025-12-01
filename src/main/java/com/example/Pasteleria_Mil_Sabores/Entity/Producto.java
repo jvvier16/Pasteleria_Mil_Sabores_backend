@@ -25,7 +25,9 @@ public class Producto {
     @Column(name = "imagen", length = 500)
     private String imagen;
 
+    // Relación con Categoria - FK explícita
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_categoria_id")
     private Categoria categoria;
 
     @Column(name = "descripcion", length = 1000)

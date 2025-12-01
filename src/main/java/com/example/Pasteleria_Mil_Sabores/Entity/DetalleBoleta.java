@@ -10,14 +10,17 @@ public class DetalleBoleta {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long detalleId;
 
-    // Relación con Producto
+    // Relación con Producto - FK explícita
     @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "producto_producto_id")
     private Producto producto;
 
     @Column(name = "cantidad", nullable = false)
     private Integer cantidad;
 
+    // Relación con Boleta - FK explícita
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "boleta_boleta_id")
     private Boleta boleta;
 
     // Getters y Setters

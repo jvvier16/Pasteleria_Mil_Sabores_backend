@@ -17,8 +17,9 @@ public class Boleta {
     @Column(name = "fecha", nullable = false)
     private LocalDateTime fecha;
 
-    // Relación con Usuario (cliente). Aprovecha la entidad Usuario existente.
+    // Relación con Usuario (cliente) - FK separada del ID de boleta
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cliente_user_id")
     private Usuario cliente;
 
     @OneToMany(mappedBy = "boleta", cascade = CascadeType.ALL, orphanRemoval = true)
