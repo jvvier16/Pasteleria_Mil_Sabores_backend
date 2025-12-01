@@ -38,6 +38,9 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // === ENDPOINTS PÚBLICOS (sin autenticación) ===
+                // Health Check (para verificar disponibilidad del servidor)
+                .requestMatchers("/api/health").permitAll()
+                
                 // Auth
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/api/v2/auth/**").permitAll()
