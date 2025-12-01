@@ -11,26 +11,23 @@ import java.util.List;
 public class Boleta {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "boleta_seq")
-    @SequenceGenerator(name = "boleta_seq", sequenceName = "BOLETA_SEQ", allocationSize = 1)
-    @Column(name = "BOLETA_ID")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long boletaId;
 
-    @Column(name = "FECHA", nullable = false)
+    @Column(name = "fecha", nullable = false)
     private LocalDateTime fecha;
 
-    // Relación con Usuario (cliente) - FK explícita
+    // Relación con Usuario (cliente). Aprovecha la entidad Usuario existente.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CLIENTE_ID", referencedColumnName = "USER_ID")
     private Usuario cliente;
 
     @OneToMany(mappedBy = "boleta", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetalleBoleta> items = new ArrayList<>();
 
-    @Column(name = "TOTAL", precision = 12, scale = 2)
+    @Column(name = "total", precision = 12, scale = 2)
     private BigDecimal total;
 
-    @Column(name = "ESTADO", length = 50)
+    @Column(name = "estado", length = 50)
     private String estado; // p.ej. "pendiente", "procesado", "enviado"
 
     // Getters y Setters

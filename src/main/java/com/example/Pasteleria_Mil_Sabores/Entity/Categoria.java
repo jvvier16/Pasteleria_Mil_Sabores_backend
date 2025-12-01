@@ -9,15 +9,13 @@ import java.util.Set;
 public class Categoria {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "categoria_seq")
-    @SequenceGenerator(name = "categoria_seq", sequenceName = "CATEGORIA_SEQ", allocationSize = 1)
-    @Column(name = "CATEGORIA_ID")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long categoriaId;
 
-    @Column(name = "NOMBRE", nullable = false, length = 150, unique = true)
+    @Column(name = "nombre", nullable = false, length = 150, unique = true)
     private String nombre;
 
-    @Column(name = "DESCRIPCION", length = 500)
+    @Column(name = "descripcion", length = 500)
     private String descripcion;
 
     @OneToMany(mappedBy = "categoria", cascade = CascadeType.ALL, orphanRemoval = false)
