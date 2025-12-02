@@ -1,6 +1,7 @@
 package com.example.Pasteleria_Mil_Sabores.Entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public class Usuario {
     private String correo;
 
     @Column(name = "contrasena", nullable = false)
-    @JsonIgnore // No exponer contraseña en respuestas JSON
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // Permite recibir en registro, pero no expone en respuestas
     private String contrasena;
 
     @Column(name = "fechaNacimiento")

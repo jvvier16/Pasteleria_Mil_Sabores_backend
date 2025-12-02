@@ -106,6 +106,17 @@ public class AuthController {
     @PostMapping({"/v1/auth/registro", "/v2/auth/registro"})
     public ResponseEntity<ApiResponse<LoginResponse>> registro(@Valid @RequestBody Usuario usuario) {
         
+        // Validar campos obligatorios
+        if (usuario.getCorreo() == null || usuario.getCorreo().trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(400, "El correo es obligatorio"));
+        }
+        
+        if (usuario.getContrasena() == null || usuario.getContrasena().trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(400, "La contraseña es obligatoria"));
+        }
+        
         // Verificar si el correo ya existe
         Usuario existente = usuarioRepository.findByCorreo(usuario.getCorreo()).orElse(null);
         if (existente != null) {
