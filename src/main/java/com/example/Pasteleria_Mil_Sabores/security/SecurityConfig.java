@@ -17,7 +17,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -37,6 +36,9 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // === PERMITIR TODAS LAS SOLICITUDES OPTIONS (preflight CORS) ===
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                
                 // === ENDPOINTS PÚBLICOS (sin autenticación) ===
                 // Health Check (para verificar disponibilidad del servidor)
                 .requestMatchers("/api/health").permitAll()
@@ -57,8 +59,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v2/categorias/**").permitAll()
                 
                 // === API v2 - Requiere ADMIN o TESTER ===
-                .requestMatchers(HttpMethod.POST, "/api/v2/productos").hasAnyRole("ADMIN", "TESTER")
-                .requestMatchers(HttpMethod.PUT, "/api/v2/productos/**").hasAnyRole("ADMIN", "TESTER")
+                .requestMatchers(HttpMethod.POST, "/api/v2/productos").hasAnyRole("ADMIN", "TESTER", "VENDEDOR")
+                .requestMatchers(HttpMethod.PUT, "/api/v2/productos/**").hasAnyRole("ADMIN", "TESTER", "VENDEDOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/v2/productos/**").hasAnyRole("ADMIN", "TESTER")
                 
                 // === API v1 - PRIVADA (ADMIN, TESTER, VENDEDOR según rol) ===
@@ -102,10 +104,47 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000", "*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(false);
+        
+        // Usar allowedOriginPatterns para poder usar wildcards con credenciales
+        configuration.setAllowedOriginPatterns(Arrays.asList(
+            "http://localhost:*",
+            "http://127.0.0.1:*",
+            "https://localhost:*",
+            "https://127.0.0.1:*",
+            "*"
+        ));
+        
+        // Métodos permitidos
+        configuration.setAllowedMethods(Arrays.asList(
+            "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"
+        ));
+        
+        // Headers permitidos
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "Origin",
+            "X-Requested-With",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers",
+            "Cache-Control",
+            "Pragma"
+        ));
+        
+        // Headers expuestos al cliente
+        configuration.setExposedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Type",
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Credentials"
+        ));
+        
+        // Permitir credenciales (cookies, authorization headers)
+        configuration.setAllowCredentials(true);
+        
+        // Tiempo máximo de cache para preflight (en segundos)
+        configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -117,4 +156,3 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
-
