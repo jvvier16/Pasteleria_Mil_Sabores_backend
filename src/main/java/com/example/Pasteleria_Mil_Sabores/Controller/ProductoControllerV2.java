@@ -1,6 +1,8 @@
 package com.example.Pasteleria_Mil_Sabores.Controller;
 
+import com.example.Pasteleria_Mil_Sabores.Entity.Categoria;
 import com.example.Pasteleria_Mil_Sabores.Entity.Producto;
+import com.example.Pasteleria_Mil_Sabores.Repository.CategoriaRepository;
 import com.example.Pasteleria_Mil_Sabores.Repository.ProductoRepository;
 import com.example.Pasteleria_Mil_Sabores.Service.ProductoService;
 import com.example.Pasteleria_Mil_Sabores.dto.ApiResponse;
@@ -10,7 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -29,10 +33,14 @@ public class ProductoControllerV2 {
 
     private final ProductoService productoService;
     private final ProductoRepository productoRepository;
+    private final CategoriaRepository categoriaRepository;
 
-    public ProductoControllerV2(ProductoService productoService, ProductoRepository productoRepository) {
+    public ProductoControllerV2(ProductoService productoService, 
+                                 ProductoRepository productoRepository,
+                                 CategoriaRepository categoriaRepository) {
         this.productoService = productoService;
         this.productoRepository = productoRepository;
+        this.categoriaRepository = categoriaRepository;
     }
 
     /**
@@ -84,28 +92,93 @@ public class ProductoControllerV2 {
      * API: Pública (pero requiere autenticación)
      * Requiere Autenticación: Sí
      * Roles permitidos: Admin
-     * Datos de entrada: {nombre: "Pikachu", tipo: ...}
+     * Datos de entrada: {nombre, precio, stock, imagen?, descripcion?, categoriaId?}
      * Descripción: Crea un nuevo producto (requiere detalles completos)
      * Respuestas: 201 Creado, 400 Datos inválidos
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TESTER', 'VENDEDOR')")
-    public ResponseEntity<ApiResponse<ProductoDTO>> crearProducto(@RequestBody Producto producto) {
-        // Validaciones
-        if (producto.getNombre() == null || producto.getNombre().trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.badRequest("El nombre del producto es obligatorio"));
-        }
-        
-        if (producto.getPrecio() == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.badRequest("El precio del producto es obligatorio"));
-        }
-
+    public ResponseEntity<ApiResponse<ProductoDTO>> crearProducto(@RequestBody Map<String, Object> productoData) {
         try {
+            // Validaciones
+            String nombre = (String) productoData.get("nombre");
+            if (nombre == null || nombre.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.badRequest("El nombre del producto es obligatorio"));
+            }
+            
+            Object precioObj = productoData.get("precio");
+            if (precioObj == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.badRequest("El precio del producto es obligatorio"));
+            }
+
+            // Crear el producto
+            Producto producto = new Producto();
+            producto.setNombre(nombre.trim());
+            
+            // Manejar precio (puede venir como String, Integer o Double)
+            BigDecimal precio;
+            if (precioObj instanceof Number) {
+                precio = new BigDecimal(precioObj.toString());
+            } else if (precioObj instanceof String) {
+                precio = new BigDecimal((String) precioObj);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.badRequest("El precio no tiene un formato válido"));
+            }
+            producto.setPrecio(precio);
+            
+            // Stock
+            Object stockObj = productoData.get("stock");
+            if (stockObj != null) {
+                if (stockObj instanceof Number) {
+                    producto.setStock(((Number) stockObj).intValue());
+                } else if (stockObj instanceof String) {
+                    producto.setStock(Integer.parseInt((String) stockObj));
+                }
+            }
+            
+            // Imagen
+            String imagen = (String) productoData.get("imagen");
+            if (imagen != null) {
+                producto.setImagen(imagen);
+            }
+            
+            // Descripción
+            String descripcion = (String) productoData.get("descripcion");
+            if (descripcion != null) {
+                producto.setDescripcion(descripcion);
+            }
+            
+            // Manejar categoría por ID
+            Object categoriaIdObj = productoData.get("categoriaId");
+            if (categoriaIdObj != null) {
+                Long categoriaId;
+                if (categoriaIdObj instanceof Number) {
+                    categoriaId = ((Number) categoriaIdObj).longValue();
+                } else if (categoriaIdObj instanceof String) {
+                    categoriaId = Long.parseLong((String) categoriaIdObj);
+                } else {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.badRequest("El ID de categoría no tiene un formato válido"));
+                }
+                
+                Categoria categoria = categoriaRepository.findById(categoriaId).orElse(null);
+                if (categoria == null) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.badRequest("Categoría no encontrada con ID: " + categoriaId));
+                }
+                producto.setCategoria(categoria);
+            }
+
             Producto guardado = productoService.crearProducto(producto);
             return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(new ProductoDTO(guardado)));
+                
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.badRequest("Error en el formato de los números: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.badRequest("Error al crear producto: " + e.getMessage()));
@@ -118,15 +191,15 @@ public class ProductoControllerV2 {
      * API: Pública (pero requiere autenticación)
      * Requiere Autenticación: Sí
      * Roles permitidos: Admin
-     * Datos de entrada: {nombre: "Raichu", tipo: "Eléctrico"...}
-     * Descripción: Actualiza información de un producto (nombre y tipo)
+     * Datos de entrada: {nombre?, precio?, stock?, imagen?, descripcion?, categoriaId?}
+     * Descripción: Actualiza información de un producto
      * Respuestas: 200 Éxito, 400 Datos inválidos, 404 No encontrado
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TESTER', 'VENDEDOR')")
     public ResponseEntity<ApiResponse<ProductoDTO>> actualizarProducto(
             @PathVariable Long id, 
-            @RequestBody Producto productoActualizado) {
+            @RequestBody Map<String, Object> productoData) {
         
         Producto existente = productoService.obtenerProductoPorId(id);
         if (existente == null) {
@@ -134,35 +207,86 @@ public class ProductoControllerV2 {
                 .body(ApiResponse.notFound("Producto no encontrado con ID: " + id));
         }
 
-        // Validar datos de entrada
-        if (productoActualizado.getNombre() != null && productoActualizado.getNombre().trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.badRequest("El nombre no puede estar vacío"));
-        }
-
-        // Actualizar campos
-        if (productoActualizado.getNombre() != null) {
-            existente.setNombre(productoActualizado.getNombre());
-        }
-        if (productoActualizado.getPrecio() != null) {
-            existente.setPrecio(productoActualizado.getPrecio());
-        }
-        if (productoActualizado.getStock() != null) {
-            existente.setStock(productoActualizado.getStock());
-        }
-        if (productoActualizado.getImagen() != null) {
-            existente.setImagen(productoActualizado.getImagen());
-        }
-        if (productoActualizado.getDescripcion() != null) {
-            existente.setDescripcion(productoActualizado.getDescripcion());
-        }
-        if (productoActualizado.getCategoria() != null) {
-            existente.setCategoria(productoActualizado.getCategoria());
-        }
-
         try {
+            // Actualizar nombre
+            String nombre = (String) productoData.get("nombre");
+            if (nombre != null) {
+                if (nombre.trim().isEmpty()) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.badRequest("El nombre no puede estar vacío"));
+                }
+                existente.setNombre(nombre.trim());
+            }
+            
+            // Actualizar precio
+            Object precioObj = productoData.get("precio");
+            if (precioObj != null) {
+                BigDecimal precio;
+                if (precioObj instanceof Number) {
+                    precio = new BigDecimal(precioObj.toString());
+                } else if (precioObj instanceof String) {
+                    precio = new BigDecimal((String) precioObj);
+                } else {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.badRequest("El precio no tiene un formato válido"));
+                }
+                existente.setPrecio(precio);
+            }
+            
+            // Actualizar stock
+            Object stockObj = productoData.get("stock");
+            if (stockObj != null) {
+                if (stockObj instanceof Number) {
+                    existente.setStock(((Number) stockObj).intValue());
+                } else if (stockObj instanceof String) {
+                    existente.setStock(Integer.parseInt((String) stockObj));
+                }
+            }
+            
+            // Actualizar imagen
+            if (productoData.containsKey("imagen")) {
+                String imagen = (String) productoData.get("imagen");
+                existente.setImagen(imagen);
+            }
+            
+            // Actualizar descripción
+            if (productoData.containsKey("descripcion")) {
+                String descripcion = (String) productoData.get("descripcion");
+                existente.setDescripcion(descripcion);
+            }
+            
+            // Actualizar categoría por ID
+            if (productoData.containsKey("categoriaId")) {
+                Object categoriaIdObj = productoData.get("categoriaId");
+                if (categoriaIdObj == null) {
+                    // Si se envía null, quitar la categoría
+                    existente.setCategoria(null);
+                } else {
+                    Long categoriaId;
+                    if (categoriaIdObj instanceof Number) {
+                        categoriaId = ((Number) categoriaIdObj).longValue();
+                    } else if (categoriaIdObj instanceof String) {
+                        categoriaId = Long.parseLong((String) categoriaIdObj);
+                    } else {
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(ApiResponse.badRequest("El ID de categoría no tiene un formato válido"));
+                    }
+                    
+                    Categoria categoria = categoriaRepository.findById(categoriaId).orElse(null);
+                    if (categoria == null) {
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(ApiResponse.badRequest("Categoría no encontrada con ID: " + categoriaId));
+                    }
+                    existente.setCategoria(categoria);
+                }
+            }
+
             Producto actualizado = productoService.actualizarProducto(existente);
             return ResponseEntity.ok(ApiResponse.success("Producto actualizado", new ProductoDTO(actualizado)));
+            
+        } catch (NumberFormatException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.badRequest("Error en el formato de los números: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.badRequest("Error al actualizar: " + e.getMessage()));
@@ -258,4 +382,3 @@ public class ProductoControllerV2 {
         }
     }
 }
-
