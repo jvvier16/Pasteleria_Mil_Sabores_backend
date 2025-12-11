@@ -76,14 +76,33 @@ public class ProductoControllerV2 {
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductoDTO>> obtenerProductoPorId(@PathVariable Long id) {
-        Producto producto = productoService.obtenerProductoPorId(id);
-        
-        if (producto == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.notFound("Producto no encontrado con ID: " + id));
+        try {
+            // Validar que el ID sea válido
+            if (id == null || id <= 0) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.badRequest("ID de producto inválido: " + id));
+            }
+            
+            Producto producto = productoService.obtenerProductoPorId(id);
+            
+            if (producto == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.notFound("Producto no encontrado con ID: " + id));
+            }
+            
+            // Validar que el producto tenga datos válidos
+            ProductoDTO productoDTO = new ProductoDTO(producto);
+            if (productoDTO.getProductoId() == null) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(500, "Error al procesar el producto"));
+            }
+            
+            return ResponseEntity.ok(ApiResponse.success(productoDTO));
+        } catch (Exception e) {
+            // Manejar cualquier excepción inesperada
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error(500, "Error al obtener producto: " + e.getMessage()));
         }
-        
-        return ResponseEntity.ok(ApiResponse.success(new ProductoDTO(producto)));
     }
 
     /**
