@@ -7,14 +7,19 @@ import com.example.Pasteleria_Mil_Sabores.Repository.ProductoRepository;
 import com.example.Pasteleria_Mil_Sabores.Service.ProductoService;
 import com.example.Pasteleria_Mil_Sabores.dto.ApiResponse;
 import com.example.Pasteleria_Mil_Sabores.dto.ProductoDTO;
+import com.example.Pasteleria_Mil_Sabores.dto.ProductoRequestDTO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +34,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/v2/productos")
+@Tag(name = "Productos", description = "API para gestión de productos")
 public class ProductoControllerV2 {
 
     private final ProductoService productoService;
@@ -110,83 +116,68 @@ public class ProductoControllerV2 {
      * 
      * API: Pública (pero requiere autenticación)
      * Requiere Autenticación: Sí
-     * Roles permitidos: Admin
+     * Roles permitidos: Admin, Tester, Vendedor
      * Datos de entrada: {nombre, precio, stock, imagen?, descripcion?, categoriaId?}
      * Descripción: Crea un nuevo producto (requiere detalles completos)
      * Respuestas: 201 Creado, 400 Datos inválidos
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TESTER', 'VENDEDOR')")
-    public ResponseEntity<ApiResponse<ProductoDTO>> crearProducto(@RequestBody Map<String, Object> productoData) {
+    @Operation(
+        summary = "Crear un nuevo producto",
+        description = "Crea un nuevo producto en la base de datos. Requiere autenticación con rol ADMIN, TESTER o VENDEDOR."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Producto creado exitosamente"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Acceso denegado")
+    })
+    public ResponseEntity<ApiResponse<ProductoDTO>> crearProducto(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Datos del producto a crear",
+                required = true,
+                content = @Content(schema = @Schema(implementation = ProductoRequestDTO.class))
+            )
+            @RequestBody ProductoRequestDTO productoData) {
         try {
             // Validaciones
-            String nombre = (String) productoData.get("nombre");
-            if (nombre == null || nombre.trim().isEmpty()) {
+            if (productoData.getNombre() == null || productoData.getNombre().trim().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.badRequest("El nombre del producto es obligatorio"));
             }
             
-            Object precioObj = productoData.get("precio");
-            if (precioObj == null) {
+            if (productoData.getPrecio() == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.badRequest("El precio del producto es obligatorio"));
             }
 
             // Crear el producto
             Producto producto = new Producto();
-            producto.setNombre(nombre.trim());
-            
-            // Manejar precio (puede venir como String, Integer o Double)
-            BigDecimal precio;
-            if (precioObj instanceof Number) {
-                precio = new BigDecimal(precioObj.toString());
-            } else if (precioObj instanceof String) {
-                precio = new BigDecimal((String) precioObj);
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.badRequest("El precio no tiene un formato válido"));
-            }
-            producto.setPrecio(precio);
+            producto.setNombre(productoData.getNombre().trim());
+            producto.setPrecio(productoData.getPrecio());
             
             // Stock
-            Object stockObj = productoData.get("stock");
-            if (stockObj != null) {
-                if (stockObj instanceof Number) {
-                    producto.setStock(((Number) stockObj).intValue());
-                } else if (stockObj instanceof String) {
-                    producto.setStock(Integer.parseInt((String) stockObj));
-                }
+            if (productoData.getStock() != null) {
+                producto.setStock(productoData.getStock());
             }
             
             // Imagen
-            String imagen = (String) productoData.get("imagen");
-            if (imagen != null) {
-                producto.setImagen(imagen);
+            if (productoData.getImagen() != null) {
+                producto.setImagen(productoData.getImagen());
             }
             
             // Descripción
-            String descripcion = (String) productoData.get("descripcion");
-            if (descripcion != null) {
-                producto.setDescripcion(descripcion);
+            if (productoData.getDescripcion() != null) {
+                producto.setDescripcion(productoData.getDescripcion());
             }
             
             // Manejar categoría por ID
-            Object categoriaIdObj = productoData.get("categoriaId");
-            if (categoriaIdObj != null) {
-                Long categoriaId;
-                if (categoriaIdObj instanceof Number) {
-                    categoriaId = ((Number) categoriaIdObj).longValue();
-                } else if (categoriaIdObj instanceof String) {
-                    categoriaId = Long.parseLong((String) categoriaIdObj);
-                } else {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(ApiResponse.badRequest("El ID de categoría no tiene un formato válido"));
-                }
-                
-                Categoria categoria = categoriaRepository.findById(categoriaId).orElse(null);
+            if (productoData.getCategoriaId() != null) {
+                Categoria categoria = categoriaRepository.findById(productoData.getCategoriaId()).orElse(null);
                 if (categoria == null) {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(ApiResponse.badRequest("Categoría no encontrada con ID: " + categoriaId));
+                        .body(ApiResponse.badRequest("Categoría no encontrada con ID: " + productoData.getCategoriaId()));
                 }
                 producto.setCategoria(categoria);
             }
@@ -209,16 +200,30 @@ public class ProductoControllerV2 {
      * 
      * API: Pública (pero requiere autenticación)
      * Requiere Autenticación: Sí
-     * Roles permitidos: Admin
+     * Roles permitidos: Admin, Tester, Vendedor
      * Datos de entrada: {nombre?, precio?, stock?, imagen?, descripcion?, categoriaId?}
      * Descripción: Actualiza información de un producto
      * Respuestas: 200 Éxito, 400 Datos inválidos, 404 No encontrado
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TESTER', 'VENDEDOR')")
+    @Operation(
+        summary = "Actualizar un producto",
+        description = "Actualiza los datos de un producto existente. Todos los campos son opcionales."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Producto actualizado exitosamente"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Producto no encontrado")
+    })
     public ResponseEntity<ApiResponse<ProductoDTO>> actualizarProducto(
-            @PathVariable Long id, 
-            @RequestBody Map<String, Object> productoData) {
+            @Parameter(description = "ID del producto a actualizar") @PathVariable Long id, 
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Datos del producto a actualizar (todos los campos son opcionales)",
+                required = true,
+                content = @Content(schema = @Schema(implementation = ProductoRequestDTO.class))
+            )
+            @RequestBody ProductoRequestDTO productoData) {
         
         Producto existente = productoService.obtenerProductoPorId(id);
         if (existente == null) {
@@ -228,76 +233,42 @@ public class ProductoControllerV2 {
 
         try {
             // Actualizar nombre
-            String nombre = (String) productoData.get("nombre");
-            if (nombre != null) {
-                if (nombre.trim().isEmpty()) {
+            if (productoData.getNombre() != null) {
+                if (productoData.getNombre().trim().isEmpty()) {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(ApiResponse.badRequest("El nombre no puede estar vacío"));
                 }
-                existente.setNombre(nombre.trim());
+                existente.setNombre(productoData.getNombre().trim());
             }
             
             // Actualizar precio
-            Object precioObj = productoData.get("precio");
-            if (precioObj != null) {
-                BigDecimal precio;
-                if (precioObj instanceof Number) {
-                    precio = new BigDecimal(precioObj.toString());
-                } else if (precioObj instanceof String) {
-                    precio = new BigDecimal((String) precioObj);
-                } else {
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(ApiResponse.badRequest("El precio no tiene un formato válido"));
-                }
-                existente.setPrecio(precio);
+            if (productoData.getPrecio() != null) {
+                existente.setPrecio(productoData.getPrecio());
             }
             
             // Actualizar stock
-            Object stockObj = productoData.get("stock");
-            if (stockObj != null) {
-                if (stockObj instanceof Number) {
-                    existente.setStock(((Number) stockObj).intValue());
-                } else if (stockObj instanceof String) {
-                    existente.setStock(Integer.parseInt((String) stockObj));
-                }
+            if (productoData.getStock() != null) {
+                existente.setStock(productoData.getStock());
             }
             
             // Actualizar imagen
-            if (productoData.containsKey("imagen")) {
-                String imagen = (String) productoData.get("imagen");
-                existente.setImagen(imagen);
+            if (productoData.getImagen() != null) {
+                existente.setImagen(productoData.getImagen());
             }
             
             // Actualizar descripción
-            if (productoData.containsKey("descripcion")) {
-                String descripcion = (String) productoData.get("descripcion");
-                existente.setDescripcion(descripcion);
+            if (productoData.getDescripcion() != null) {
+                existente.setDescripcion(productoData.getDescripcion());
             }
             
             // Actualizar categoría por ID
-            if (productoData.containsKey("categoriaId")) {
-                Object categoriaIdObj = productoData.get("categoriaId");
-                if (categoriaIdObj == null) {
-                    // Si se envía null, quitar la categoría
-                    existente.setCategoria(null);
-                } else {
-                    Long categoriaId;
-                    if (categoriaIdObj instanceof Number) {
-                        categoriaId = ((Number) categoriaIdObj).longValue();
-                    } else if (categoriaIdObj instanceof String) {
-                        categoriaId = Long.parseLong((String) categoriaIdObj);
-                    } else {
-                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body(ApiResponse.badRequest("El ID de categoría no tiene un formato válido"));
-                    }
-                    
-                    Categoria categoria = categoriaRepository.findById(categoriaId).orElse(null);
-                    if (categoria == null) {
-                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                            .body(ApiResponse.badRequest("Categoría no encontrada con ID: " + categoriaId));
-                    }
-                    existente.setCategoria(categoria);
+            if (productoData.getCategoriaId() != null) {
+                Categoria categoria = categoriaRepository.findById(productoData.getCategoriaId()).orElse(null);
+                if (categoria == null) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ApiResponse.badRequest("Categoría no encontrada con ID: " + productoData.getCategoriaId()));
                 }
+                existente.setCategoria(categoria);
             }
 
             Producto actualizado = productoService.actualizarProducto(existente);

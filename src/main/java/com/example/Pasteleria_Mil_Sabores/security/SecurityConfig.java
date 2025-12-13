@@ -17,6 +17,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 @Configuration
 @EnableWebSecurity
@@ -105,21 +106,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Usar allowedOriginPatterns para poder usar wildcards con credenciales
-        configuration.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:*",
-            "http://127.0.0.1:*",
-            "https://localhost:*",
-            "https://127.0.0.1:*",
-            "*"
-        ));
+        // Permitir TODOS los orígenes (sin credenciales para evitar conflicto)
+        configuration.setAllowedOrigins(Collections.singletonList("*"));
         
         // Métodos permitidos
         configuration.setAllowedMethods(Arrays.asList(
             "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"
         ));
         
-        // Headers permitidos
+        // Headers permitidos - INCLUIR X-API-Key
         configuration.setAllowedHeaders(Arrays.asList(
             "Authorization",
             "Content-Type",
@@ -129,7 +124,11 @@ public class SecurityConfig {
             "Access-Control-Request-Method",
             "Access-Control-Request-Headers",
             "Cache-Control",
-            "Pragma"
+            "Pragma",
+            "X-API-Key",
+            "Api-Key",
+            "x-api-key",
+            "api-key"
         ));
         
         // Headers expuestos al cliente
@@ -137,11 +136,12 @@ public class SecurityConfig {
             "Authorization",
             "Content-Type",
             "Access-Control-Allow-Origin",
-            "Access-Control-Allow-Credentials"
+            "Access-Control-Allow-Headers",
+            "Access-Control-Allow-Methods"
         ));
         
-        // Permitir credenciales (cookies, authorization headers)
-        configuration.setAllowCredentials(true);
+        // NO usar credenciales cuando se permite "*" como origen
+        configuration.setAllowCredentials(false);
         
         // Tiempo máximo de cache para preflight (en segundos)
         configuration.setMaxAge(3600L);

@@ -5,7 +5,11 @@ import com.example.Pasteleria_Mil_Sabores.Repository.UsuarioRepository;
 import com.example.Pasteleria_Mil_Sabores.dto.ApiResponse;
 import com.example.Pasteleria_Mil_Sabores.dto.LoginRequest;
 import com.example.Pasteleria_Mil_Sabores.dto.LoginResponse;
+import com.example.Pasteleria_Mil_Sabores.dto.RegistroRequest;
 import com.example.Pasteleria_Mil_Sabores.security.JwtUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api")
+@Tag(name = "Autenticación", description = "Endpoints para login, registro y verificación de token")
 public class AuthController {
 
     private final UsuarioRepository usuarioRepository;
@@ -44,6 +49,12 @@ public class AuthController {
      * Autentica un usuario y devuelve un token JWT
      */
     @PostMapping({"/v1/auth/login", "/v2/auth/login"})
+    @Operation(summary = "Iniciar sesión", description = "Autentica un usuario y devuelve un token JWT")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login exitoso"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Credenciales inválidas"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Usuario desactivado")
+    })
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         
         // Buscar usuario por correo
@@ -104,35 +115,40 @@ public class AuthController {
      * Registra un nuevo usuario
      */
     @PostMapping({"/v1/auth/registro", "/v2/auth/registro"})
-    public ResponseEntity<ApiResponse<LoginResponse>> registro(@Valid @RequestBody Usuario usuario) {
+    @Operation(summary = "Registrar usuario", description = "Registra un nuevo usuario y devuelve un token JWT")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Usuario registrado"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos o correo ya registrado")
+    })
+    public ResponseEntity<ApiResponse<LoginResponse>> registro(@Valid @RequestBody RegistroRequest request) {
         
         // Validar campos obligatorios
-        if (usuario.getCorreo() == null || usuario.getCorreo().trim().isEmpty()) {
+        if (request.getCorreo() == null || request.getCorreo().trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(400, "El correo es obligatorio"));
         }
         
-        if (usuario.getContrasena() == null || usuario.getContrasena().trim().isEmpty()) {
+        if (request.getContrasena() == null || request.getContrasena().trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(400, "La contraseña es obligatoria"));
         }
         
         // Verificar si el correo ya existe
-        Usuario existente = usuarioRepository.findByCorreo(usuario.getCorreo()).orElse(null);
+        Usuario existente = usuarioRepository.findByCorreo(request.getCorreo()).orElse(null);
         if (existente != null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(400, "El correo ya está registrado"));
         }
 
-        // Encriptar contraseña
-        usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
-        
-        // Asignar rol por defecto si no tiene
-        if (usuario.getRole() == null || usuario.getRole().isEmpty()) {
-            usuario.setRole("user");
-        }
-
-        // Activar usuario
+        // Crear nuevo usuario
+        Usuario usuario = new Usuario();
+        usuario.setNombre(request.getNombre());
+        usuario.setApellido(request.getApellido());
+        usuario.setCorreo(request.getCorreo());
+        usuario.setContrasena(passwordEncoder.encode(request.getContrasena()));
+        usuario.setTelefono(request.getTelefono());
+        usuario.setDireccion(request.getDireccion());
+        usuario.setRole("user"); // Rol por defecto
         usuario.setActivo(true);
 
         // Guardar usuario

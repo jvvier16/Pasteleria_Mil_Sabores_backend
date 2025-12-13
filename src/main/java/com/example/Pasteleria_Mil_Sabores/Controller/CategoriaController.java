@@ -6,6 +6,10 @@ import com.example.Pasteleria_Mil_Sabores.Repository.ProductoRepository;
 import com.example.Pasteleria_Mil_Sabores.Service.CategoriaService;
 import com.example.Pasteleria_Mil_Sabores.dto.ApiResponse;
 import com.example.Pasteleria_Mil_Sabores.dto.CategoriaDTO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +31,8 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/v1/categorias")
+@Tag(name = "Categorías (Admin)", description = "API para gestión de categorías - Requiere autenticación")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class CategoriaController {
 
     @Autowired
@@ -44,6 +50,12 @@ public class CategoriaController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TESTER')")
+    @Operation(summary = "Crear categoría", description = "Crea una nueva categoría de productos")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Categoría creada"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Datos inválidos"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No autorizado")
+    })
     public ResponseEntity<ApiResponse<CategoriaDTO>> agregarCategoria(@RequestBody CategoriaDTO categoriaDTO) {
         try {
             // Validar nombre
@@ -84,6 +96,7 @@ public class CategoriaController {
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TESTER')")
+    @Operation(summary = "Listar categorías", description = "Obtiene todas las categorías")
     public ResponseEntity<ApiResponse<List<CategoriaDTO>>> obtenerTodasLasCategorias() {
         try {
             List<Categoria> categorias = service.obtenerTodasLasCategorias();
@@ -105,7 +118,9 @@ public class CategoriaController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TESTER')")
-    public ResponseEntity<ApiResponse<CategoriaDTO>> obtenerCategoriaPorId(@PathVariable Long id) {
+    @Operation(summary = "Obtener categoría por ID", description = "Obtiene una categoría específica")
+    public ResponseEntity<ApiResponse<CategoriaDTO>> obtenerCategoriaPorId(
+            @Parameter(description = "ID de la categoría") @PathVariable Long id) {
         try {
             Categoria categoria = service.obtenerCategoriaPorId(id);
             
@@ -128,6 +143,7 @@ public class CategoriaController {
      */
     @PutMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'TESTER')")
+    @Operation(summary = "Actualizar categoría", description = "Actualiza una categoría existente. El ID debe venir en el body.")
     public ResponseEntity<ApiResponse<CategoriaDTO>> actualizarCategoria(@RequestBody CategoriaDTO categoriaDTO) {
         try {
             // Validar que se proporcionó el ID
@@ -188,7 +204,9 @@ public class CategoriaController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'TESTER')")
-    public ResponseEntity<ApiResponse<String>> eliminarCategoria(@PathVariable Long id) {
+    @Operation(summary = "Eliminar categoría", description = "Elimina una categoría. No se puede eliminar si tiene productos asociados.")
+    public ResponseEntity<ApiResponse<String>> eliminarCategoria(
+            @Parameter(description = "ID de la categoría a eliminar") @PathVariable Long id) {
         try {
             // Verificar que la categoría existe
             Categoria categoria = service.obtenerCategoriaPorId(id);

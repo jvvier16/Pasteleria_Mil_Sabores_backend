@@ -10,6 +10,10 @@ import com.example.Pasteleria_Mil_Sabores.dto.CrearBoletaRequest;
 import com.example.Pasteleria_Mil_Sabores.exception.ProductoNoEncontradoException;
 import com.example.Pasteleria_Mil_Sabores.exception.StockInsuficienteException;
 import com.example.Pasteleria_Mil_Sabores.security.JwtUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +33,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/v2/boletas")
+@Tag(name = "Boletas/Órdenes", description = "API para gestión de pedidos y compras")
 public class BoletaControllerV2 {
 
     private final BoletaService boletaService;
@@ -48,8 +53,9 @@ public class BoletaControllerV2 {
      * Requiere autenticación (cualquier rol)
      */
     @GetMapping("/mis-pedidos")
+    @Operation(summary = "Obtener mis pedidos", description = "Obtiene los pedidos del usuario autenticado")
     public ResponseEntity<ApiResponse<List<BoletaResponseDTO>>> obtenerMisPedidos(
-            @RequestHeader("Authorization") String authHeader) {
+            @Parameter(hidden = true) @RequestHeader("Authorization") String authHeader) {
         
         try {
             // Extraer userId del token
@@ -89,9 +95,15 @@ public class BoletaControllerV2 {
      * 5. Retorna la boleta creada
      */
     @PostMapping
+    @Operation(summary = "Crear orden/boleta", description = "Crea una nueva orden de compra. Puede ser anónimo o autenticado.")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Orden creada"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Stock insuficiente o datos inválidos"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Producto no encontrado")
+    })
     public ResponseEntity<ApiResponse<BoletaResponseDTO>> crearBoleta(
             @Valid @RequestBody CrearBoletaRequest request,
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+            @Parameter(hidden = true) @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
         try {
             Usuario cliente = null;
